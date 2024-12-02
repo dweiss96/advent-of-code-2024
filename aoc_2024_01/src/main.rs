@@ -22,21 +22,41 @@ fn read_input() -> (Vec<u32>, Vec<u32>) {
     (left_column, right_column)
 }
 
-fn main() {
-    let (left_column, right_column) = read_input();
-    
+fn part_one(left_column: &Vec<u32>, right_column: &Vec<u32>) {
+    if left_column.len() != right_column.len() {
+        println!("left and right column must have same item count but did not!");
+        return;
+    }
+
+    let mut distance = 0u64;
+
+    for index in 0..left_column.len() {
+        distance = distance.checked_add(left_column[index].abs_diff(right_column[index]) as u64)
+            .expect("Sum must not exceed u64::MAX");
+    }
+
+    println!("The distance for all {} pairs is {}", left_column.len(), distance)
+}
+
+fn part_two(left_column: Vec<u32>, right_column: Vec<u32>) {
     let mut similarity = 0u64;
     let location_count = left_column.len();
 
     for location_id in left_column {
-        let occurences = right_column.iter()
+        let occurrences = right_column.iter()
             .filter(|bad_writing| location_id.eq(bad_writing))
             .count();
 
         similarity = similarity.checked_add(
-            (location_id as u64) * (occurences as u64)
+            (location_id as u64) * (occurrences as u64)
         ).expect("Sum must not exceed u64::MAX");
     }
 
     println!("The similarity score for all {} locations is {}", location_count, similarity)
+}
+
+fn main() {
+    let (left_column, right_column) = read_input();
+    part_one(&left_column, &right_column);
+    part_two(left_column, right_column);
 }
