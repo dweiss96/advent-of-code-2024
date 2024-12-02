@@ -1,59 +1,7 @@
+mod report_analyzer;
+
 use std::fs;
-
-struct ReportAnalyzer {
-    prev: u32,
-    is_compromised: bool,
-    direction: i8,
-}
-
-impl ReportAnalyzer {
-    fn compromised(prev: u32) -> ReportAnalyzer {
-        ReportAnalyzer {
-            prev,
-            is_compromised: true,
-            direction: 0,
-        }
-    }
-
-    fn init() -> ReportAnalyzer {
-        ReportAnalyzer {
-            prev: 0,
-            is_compromised: false,
-            direction: 0,
-        }
-    }
-
-    fn validate(self, value: u32) -> ReportAnalyzer {
-        if self.is_compromised {
-            return Self::compromised(value);
-        }
-
-        if self.prev == 0 && self.direction == 0 {
-            return ReportAnalyzer {
-                prev: value,
-                is_compromised: false,
-                direction: 0,
-            };
-        }
-
-        let difference = value as i64 - self.prev as i64;
-        let direction_is_different = (difference < 0 && self.direction > 0) || (difference > 0 && self.direction < 0);
-
-        if direction_is_different {
-            Self::compromised(value)
-        } else if difference == 0 {
-            Self::compromised(value)
-        } else if difference.abs() > 3 {
-            Self::compromised(value)
-        } else {
-            ReportAnalyzer {
-                prev: value,
-                is_compromised: false,
-                direction: difference.min(100).max(-100) as i8,
-            }
-        }
-    }
-}
+use report_analyzer::ReportAnalyzer;
 
 fn read_input() -> Vec<Vec<u32>> {
     let input_file_string = fs::read_to_string("input")
@@ -66,22 +14,58 @@ fn read_input() -> Vec<Vec<u32>> {
     }))
 }
 
-fn part_one(reports: Vec<Vec<u32>>) {
+fn get_filtered_reports(reports: &Vec<Vec<u32>>) -> (Vec<ReportAnalyzer>,Vec<ReportAnalyzer>) {
     let validated_reports = reports.iter().map(|line| {
-        line.iter().fold(ReportAnalyzer::init(), |analyzer, value| {
-            analyzer.validate(value.clone())
+        line.iter().fold(ReportAnalyzer::new(line), |analyzer, value| {
+            analyzer.analyze(value.clone())
         })
     });
 
-    let valid_report_count = validated_reports.filter(|report| {
-        !report.is_compromised
-    }).count();
+    validated_reports.partition(|report| {
+        report.is_valid()
+    })
+}
 
-    println!("Out of {} reports, {} reports seem to be valid", reports.len(), valid_report_count)
+fn deep_analysis_of_reports(reports: &Vec<ReportAnalyzer>) -> Vec<ReportAnalyzer> {
+    Vec::from_iter(reports.iter().map(|r| {
+        let old_input = r.get_input();
+        for i in 0..old_input.len() {
+            let mut new_line = old_input.clone();
+            let _ = new_line.remove(i);
+
+            let new_result = new_line.clone()
+                .iter().fold(ReportAnalyzer::new(new_line.clone().as_ref()),
+                      |analyzer, value| {
+                              analyzer.analyze(value.clone())
+                    });
+
+            if new_result.is_valid() {
+                return new_result
+            }
+        }
+        ReportAnalyzer::new(Vec::from([1, 1, 1]).as_ref()).analyze(1).analyze(1).analyze(1)
+    }))
+}
+
+fn part_one(reports: &Vec<Vec<u32>>) {
+    let valid_report_count = get_filtered_reports(&reports).0.len();
+
+    println!("Out of {} reports, {} reports seem to be valid. [432]", reports.len(), valid_report_count)
+}
+
+fn part_two(reports: &Vec<Vec<u32>>) {
+    let filtered_reports = get_filtered_reports(&reports);
+    let valid_report_count = filtered_reports.0.len();
+
+    let valid_report_count_retries = deep_analysis_of_reports(&filtered_reports.1)
+        .iter().filter(|ra| ra.is_valid()).count();
+
+    println!("Out of {} reports, {}+{}={} reports seem to be valid when dampened. [488]", reports.len(), valid_report_count,valid_report_count_retries,valid_report_count+valid_report_count_retries)
 }
 
 fn main() {
     let reports = read_input();
 
-    part_one(reports);
+    part_one(&reports);
+    part_two(&reports)
 }
