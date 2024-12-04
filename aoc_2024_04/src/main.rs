@@ -15,5 +15,6 @@ fn read_input() -> Vec<Vec<char>> {
 fn main() {
     let input = read_input();
 
-    println!("Within the Input {} XMAS could be found. [2718]", Solver::new(input).count_xmas());
+    println!("Within the Input {} XMAS could be found. [2718]", Solver::new(input.clone()).count_xmas());
+    println!("Within the Input {} X-MAS could be found. [2046]", Solver::new(input).count_x_mas());
 }

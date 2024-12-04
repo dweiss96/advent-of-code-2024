@@ -77,6 +77,28 @@ impl Solver {
             Some(chars_in_line) => chars_in_line.get(x).map(|c| c.clone())
         }
     }
+    pub fn count_x_mas(self) -> u128 {
+        let mut x_mas_count = 0;
+        for y in 1..self.input.len()-1 {
+            for x in 1..self.input[y].len()-1 {
+                if self.input[y][x].eq_ignore_ascii_case(&'a') {
+                    match (
+                        self.input[y-1][x-1].to_ascii_lowercase(),
+                        self.input[y+1][x+1].to_ascii_lowercase(),
+                        self.input[y-1][x+1].to_ascii_lowercase(),
+                        self.input[y+1][x-1].to_ascii_lowercase(),
+                    ) {
+                        ('m', 's', 'm', 's') => x_mas_count += 1,
+                        ('m', 's', 's', 'm') => x_mas_count += 1,
+                        ('s', 'm', 'm', 's') => x_mas_count += 1,
+                        ('s', 'm', 's', 'm') => x_mas_count += 1,
+                        _ => {}
+                    }
+                }
+            }
+        }
+        x_mas_count
+    }
 
     pub fn count_xmas(self) -> u128 {
         let mut xmas_count = 0;
