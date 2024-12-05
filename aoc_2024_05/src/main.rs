@@ -59,5 +59,5 @@ fn main() {
     let input = read_input();
 
     println!("The middle number checksum for all valid orders is {}. [7074]", Solver::new(input.clone()).calculate_valid_order_checksum());
-    // println!("Within the Input {} X-MAS could be found. [2046]", Solver::new(input).count_x_mas());
+    println!("The middle number checksum for all invalid reordered orders is {}. [?]", Solver::new(input).calculate_fixed_invalid_order_checksum());
 }
