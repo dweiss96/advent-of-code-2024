@@ -29,5 +29,6 @@ fn read_input() -> Vec<InputLine> {
 fn main() {
     let input = read_input();
 
-    println!("The sum of checksums for all valid equations is {}. [538191549061]", Solver::new(&input).calculate_plus_mul_checksum_sum());
+    println!("The sum of checksums for all valid equations with + and * is {}. [538191549061]", Solver::new(&input).calculate_plus_mul_checksum_sum());
+    println!("The sum of checksums for all valid equations with +, * and || is {}. [34612812972206]", Solver::new(&input).calculate_plus_mul_concat_checksum_sum());
 }
