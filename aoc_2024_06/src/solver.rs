@@ -62,6 +62,7 @@ pub struct RelevantStateInformation {
     input: Vec<Vec<char>>,
     guard_mode: char,
     char_in_front: char,
+    char_to_print: char,
     current_position: Position,
 }
 
@@ -98,9 +99,16 @@ impl RelevantStateInformation {
             _ => 2,
         };
 
+        let char_to_print = match guard {
+            '^' | 'v' => '|',
+            '<' | '>' => '-',
+            _ => '+'
+        };
+
         RelevantStateInformation {
             input: focused_input.clone(),
             guard_mode: guard,
+            char_to_print,
             current_position: guard_position,
             char_in_front: focused_input[focused_y_pos][focused_x_pos]
         }
@@ -127,11 +135,12 @@ impl RelevantStateInformation {
             input: self.input,
             current_position: self.current_position,
             guard_mode: new_guard_mode,
+            char_to_print: '+',
             char_in_front: new_char_in_front,
         }
     }
 
-    fn move_guard(self, new_focused_input: Vec<Vec<char>>) -> RelevantStateInformation {
+    fn move_guard(self, new_focused_input: Vec<Vec<char>>) -> (RelevantStateInformation, char) {
         let new_position = match self.guard_mode {
             '^' => self.current_position.move_up(),
             '>' => self.current_position.move_right(),
@@ -148,12 +157,19 @@ impl RelevantStateInformation {
             _ => self.char_in_front
         };
 
-        RelevantStateInformation {
+        let new_char_to_print = match self.guard_mode {
+            '^' | 'v' => '|',
+            '<' | '>' => '-',
+            _ => self.char_to_print
+        };
+
+        (RelevantStateInformation {
             input: new_focused_input,
             current_position: new_position,
             guard_mode: self.guard_mode,
+            char_to_print: new_char_to_print,
             char_in_front: new_char_in_front,
-        }
+        }, self.char_to_print)
     }
 }
 
@@ -180,9 +196,21 @@ impl Solver {
         }
     }
 
-    fn print_state(&self) {
-        sleep(Duration::from_millis(10));
+    fn print_full_field(&self) {
         if self.debug_mode {
+            sleep(Duration::from_millis(10));
+            print!("\x1B[2J\x1B[1;1H");
+            println!("CURRENT STATE WITH POSITION {},{}", self.state.current_position.x, self.state.current_position.y);
+            for l in &self.input {
+                println!("{}", l.iter().map(|c| c.to_string()).collect::<Vec<String>>().join(""))
+            }
+            println!();
+        }
+    }
+
+    fn print_state(&self) {
+        if self.debug_mode {
+            sleep(Duration::from_millis(10));
             print!("\x1B[2J\x1B[1;1H");
             println!("CURRENT STATE WITH POSITION {},{}", self.state.current_position.x, self.state.current_position.y);
             for l in &self.state.input {
@@ -204,6 +232,7 @@ impl Solver {
     }
 
     fn exit_guard(self) -> u128 {
+        self.print_full_field();
         self.calculate_unique_positions()+1 // +1 for the current guard position
 
     }
@@ -218,6 +247,8 @@ impl Solver {
         match new_char {
             '|' if '-'.eq_ignore_ascii_case(existing_char) => '+',
             '-' if '|'.eq_ignore_ascii_case(existing_char) => '+',
+            '|' if '+'.eq_ignore_ascii_case(existing_char) => '+',
+            '-' if '+'.eq_ignore_ascii_case(existing_char) => '+',
             c => c,
         }
     }
@@ -324,7 +355,7 @@ impl Solver {
 
         Solver {
             input: new_input,
-            state: self.state.move_guard(new_viewport),
+            state: self.state.move_guard(new_viewport).0,
             debug_mode: self.debug_mode,
         }
     }

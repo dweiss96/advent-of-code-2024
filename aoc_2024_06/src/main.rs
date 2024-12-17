@@ -49,7 +49,7 @@ fn main() {
     println!("Read input in {dt_input}ms.");
 
     let (unique_positions, dt_calculation) = time_command(|| {
-        Solver::new(&input).get_unique_visited_positions()
+        Solver::new_with_debug(&input).get_unique_visited_positions()
     });
 
     println!("The guard visited {unique_positions} unique locations [4977]. Result calculated in {dt_calculation}ms");
