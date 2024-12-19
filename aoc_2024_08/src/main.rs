@@ -17,5 +17,6 @@ fn read_input() -> Vec<Vec<char>> {
 fn main() {
     let input = read_input();
 
-    println!("The antennas create {} unique antinodes inside the bounds of the map. [254]", Solver::new(&input).calculate_distinct_antinode_positions())
+    println!("The antennas create {} unique antinodes inside the bounds of the map. [254]", Solver::new(&input).calculate_distinct_antinode_positions(false));
+    println!("The antennas create {} unique antinodes inside the bounds of the map with harmonics. [951]", Solver::new(&input).calculate_distinct_antinode_positions(true));
 }

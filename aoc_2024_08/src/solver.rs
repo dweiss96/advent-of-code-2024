@@ -42,6 +42,33 @@ impl Position {
             }
         )
     }
+
+    fn is_below_limit(&self, limit: &Position) -> bool {
+        self.x < limit.x && self.y < limit.y
+    }
+
+    fn calculate_harmonic_mirror_points(&self, other: &Position, limit: &Position) -> Vec<Position> {
+        let mut last_self = self.clone();
+        let mut last_other = other.clone();
+
+        let mut harmonic_mirror_points = Vec::new();
+
+        while last_self.is_below_limit(limit) && last_other.is_below_limit(limit) {
+            match last_self.calculate_mirror_point(&last_other) {
+                Some(p) if p.is_below_limit(limit) => {
+                    harmonic_mirror_points.push(p.clone());
+                    last_other = last_self.clone();
+                    last_self = p;
+                }
+                _ => break,
+            }
+        }
+
+
+        harmonic_mirror_points.push(self.clone());
+
+        harmonic_mirror_points
+    }
 }
 
 impl Hash for Position {
@@ -69,27 +96,42 @@ impl PartialEq<Self> for Position {
 
 impl Eq for Position {}
 
+#[derive(Clone)]
 pub struct Solver {
     map_points: Vec<MapPoint>,
     limit: Position,
+    debug: bool,
 }
 
 impl Solver {
-    pub fn read_antenna_data(self) -> Vec<Position> {
+    pub fn read_antenna_data(self, include_harmonics: bool) -> Vec<Position> {
         self.map_points.iter().filter_map(|mp| {
             if mp.is_antenna() {
                 Some(self.map_points.iter()
                     .filter(|maybe_matching| {
                         maybe_matching.symbol.eq(&mp.symbol) && maybe_matching.position.ne(&mp.position)
                     }).fold(Vec::new(), |antennas, matching_antenna| {
-                        match mp.position.calculate_mirror_point(&matching_antenna.position) {
-                            Some(p) if p.x < self.limit.x && p.y < self.limit.y => {
-                                let mut new_antennas = antennas.clone();
-                                new_antennas.push(p);
-                                new_antennas
-                            },
-                            _ => antennas,
+                        if include_harmonics {
+                            let antinodes = mp.position.calculate_harmonic_mirror_points(&matching_antenna.position, &self.limit);
+
+                            let mut new_antennas = antennas.clone();
+                            for antinode in antinodes {
+                                new_antennas.push(antinode);
+                            }
+                            new_antennas
+                        } else {
+                            match mp.position.calculate_mirror_point(&matching_antenna.position) {
+                                Some(p) if p.is_below_limit(&self.limit) => {
+                                    let mut new_antennas = antennas.clone();
+                                    new_antennas.push(p);
+                                    new_antennas
+                                },
+                                _ => antennas,
+                            }
                         }
+
+
+
                     })
                 )
             } else {
@@ -98,7 +140,7 @@ impl Solver {
         }).flatten().collect()
     }
 
-    pub fn new(input: &Vec<Vec<char>>) -> Solver {
+    fn init(input: &Vec<Vec<char>>, debug: bool) -> Solver {
         Solver {
             map_points: input.iter().enumerate().map(|(y, line)| {
                 line.iter().enumerate().map(move |(x, symbol)| MapPoint {
@@ -110,15 +152,38 @@ impl Solver {
                 x: input.first().map(|l| l.len()).unwrap_or(0),
                 y: input.len()
             },
+            debug
         }
     }
 
-    pub fn calculate_distinct_antinode_positions(self) -> u128 {
+    pub fn new(input: &Vec<Vec<char>>) -> Solver {
+        Self::init(input, false)
+    }
+
+    pub fn new_with_debug(input: &Vec<Vec<char>>) -> Solver {
+        Self::init(input, true)
+    }
+
+    pub fn calculate_distinct_antinode_positions(self, include_harmonics: bool) -> u128 {
         let mut unique_positions = HashSet::new();
-        let positions = self.read_antenna_data();
+        let positions = self.clone().read_antenna_data(include_harmonics);
 
         for position in positions {
             let _ = unique_positions.insert(position);
+        }
+
+        if self.debug {
+            let mut upv = Vec::from_iter(unique_positions.iter());
+            upv.sort_by(|pa, pb| {
+                if pa.x.eq(&pb.x) {
+                    pa.y.cmp(&pb.y)
+                } else {
+                    pa.x.cmp(&pb.x)
+                }
+            });
+            upv.iter().for_each(|p| {
+                println!("Antinode @ {}:{}", p.x, p.y)
+            })
         }
 
         unique_positions.len() as u128
