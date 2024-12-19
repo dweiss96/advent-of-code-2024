@@ -1,7 +1,9 @@
 mod solver;
+mod solver_v2;
 
 use std::fs;
 use crate::solver::Solver;
+use crate::solver_v2::SolverV2;
 
 
 fn read_input() -> Vec<u8> {
@@ -16,4 +18,5 @@ fn main() {
 
     // println!("The checksum is {}. [?]", Solver::new_with_debug(&input).calculate_checksum());
     println!("The checksum is {}. [6366665108136]", Solver::new(&input).calculate_checksum());
+    println!("The checksum is {} when defrag whole files. [6398065450842]", SolverV2::new(&input).calculate_checksum());
 }
